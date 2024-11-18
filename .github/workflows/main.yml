@@ -37,8 +37,8 @@ jobs:
       # - run: docker build -t my-python-app .
         
       - name: Build Docker Image
-        uses: 'docker'
-        image: 'Dockerfile'
+          uses: 'docker'
+          image: 'Dockerfile'
       
       
 
