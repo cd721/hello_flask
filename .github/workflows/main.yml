@@ -8,7 +8,8 @@ on:
 
   # allows you to manually execute this pipeline from the Actions tab.
   workflow_dispatch:
-
+env:
+  API_KEY: ${{ secrets.API_KEY }}
 # A workflow run consists of one or more jobs that can be executed either sequentially or concurrently.
 jobs:
   # This workflow contains a single job called "build"
