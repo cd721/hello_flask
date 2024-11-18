@@ -18,7 +18,46 @@ jobs:
 
     #
     steps:
-      - uses: actions/checkout@v2  
-      - uses: actions/setup-python@v2  
+      - uses: actions/checkout@v2 # checkout the code 
+      - uses: actions/setup-python@v2 # sets up python@v2
       - run: pip install -r requirements.txt  # install requirements to enable GitHub run tests
-      - run:  python -m pytest
+      - run:  python -m pytest # runs the tests
+
+      - name: Log in to Docker Hub # docker login
+        uses: docker/login-action@v2
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }} # fill in username
+          password: ${{ secrets.DOCKER_PASSWORD }} # fill in password
+
+      - name: Push Docker Image # push docker image to a registry
+        run: docker push my-app.:${{ github.sha }} # might need a fix
+
+      - name: Deploy to AWS ECS
+        uses: aws-actions/amazon-ecs-deploy-task-definition@v1
+        with:
+          task-definition: my-task-def.json
+          service: my-service
+          cluster: my-cluster
+          wait-for-service-stability: true
+
+      - name: Log in to Azure
+          uses: azure/login@v1
+          with:
+            creds: ${{ secrets.AZURE_CREDENTIALS }}
+
+      - name: Push Docker image to Azure Container Registry
+          run: |
+            az acr login --name <YOUR_ACR_NAME>
+            docker tag my-app:${{ github.sha }} <YOUR_ACR_NAME>.azurecr.io/my-app:${{ github.sha }}
+            docker push <YOUR_ACR_NAME>.azurecr.io/my-app:${{ github.sha }}
+
+      - name: Deploy to Azure Container Instances
+          run: |
+            az container create --resource-group <RESOURCE_GROUP> \
+            --name my-container \
+            --image <YOUR_ACR_NAME>.azurecr.io/my-app:${{ github.sha }} \
+            --cpu 1 --memory 1 \
+            --registry-login-server 
+            <YOUR_ACR_NAME>.azurecr.io \
+            --registry-username ${{ secrets.AZURE_USERNAME }} \
+            --registry-password ${{ secrets.AZURE_PASSWORD }}
