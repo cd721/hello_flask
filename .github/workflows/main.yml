@@ -26,8 +26,8 @@ jobs:
       - name: Log in to Docker Hub # docker login
         uses: docker/login-action@v2
         with:
-          username: ${{ secrets.DOCKER_USERNAME }} # fill in username
-          password: ${{ secrets.DOCKER_PASSWORD }} # fill in password
+          username: ${{ secrets.DOCKERHUB_USERNAME }} # fill in username
+          password: ${{ secrets.DOCKERHUB_TOKEN }} # fill in password
 
       - name: Push Docker Image # push docker image to a registry
         run: docker push my-app.:${{ github.sha }} # might need a fix
