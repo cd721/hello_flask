@@ -12,6 +12,7 @@ app = Flask(__name__)
 load_dotenv()
 
 
+
 @app.route("/favicon.ico")
 def favicon():
     return ""
@@ -40,26 +41,7 @@ def word(word):
 
     shortdef = response.json()[0]['shortdef']
 
-    return make_response(render_template("index.html", word=word, definitions=shortdef),200)
-
-
-@app.route("/hello/<name>")
-def hello_there(name):
-    now = datetime.now()
-    formatted_now = now.strftime("%A, %d %B, %Y at %X")
-
-    # Filter the name argument to letters only using regular expressions. URL arguments
-    # can contain arbitrary text, so we restrict to safe characters only.
-    match_object = re.match("[a-zA-Z]+", name)
-
-    if match_object:
-        clean_name = match_object.group(0)
-    else:
-        clean_name = "Friend"
-
-    content = "Hello there, " + clean_name + "! It's " + formatted_now
-    return content
-
+    return make_response(render_template("word.html", word=word, definitions=shortdef),200)
 
 @app.route("/")
 def home():

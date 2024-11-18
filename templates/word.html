@@ -15,8 +15,11 @@
 </head>
 
 <body>
-    <h3>Welcome</h3>
-<p>In your address bar, please enter a word as a URL parameter. For example: <a href="/software">http://localhost:5000/software</a> </p>
+    <h3>{{word}}</h3>
+
+    {% for definition in definitions %}
+    <p>{{loop.index}}. {{definition}}</p>
+    {% endfor %}
 </body>
 
 </html>
