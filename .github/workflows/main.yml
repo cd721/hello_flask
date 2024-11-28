@@ -24,21 +24,21 @@ jobs:
       - run: pip install -r requirements.txt  # install requirements to enable GitHub run tests
       - run:  python -m pytest # runs the tests
 
-      - name: Log in to Docker Hub # docker login
-        uses: docker/login-action@v2
-        with:
-          username: ${{ secrets.DOCKERHUB_USERNAME }} # fill in username
-          password: ${{ secrets.DOCKERHUB_TOKEN }} # fill in password
+      # - name: Log in to Docker Hub # docker login
+      #   uses: docker/login-action@v2
+      #   with:
+      #     username: ${{ secrets.DOCKERHUB_USERNAME }} # fill in username
+      #     password: ${{ secrets.DOCKERHUB_TOKEN }} # fill in password
 
-      # - name: Push Docker Image # push docker image to a registry
-      #   run: docker push my-app.:${{ github.sha }} # might need a fix
+      # # - name: Push Docker Image # push docker image to a registry
+      # #   run: docker push my-app.:${{ github.sha }} # might need a fix
 
-      - name: Build and push
-        uses: docker/build-push-action@v2
-        with:
-          context: .
-          push: true
-          tags: my-app:${{ github.sha }}
+      # - name: Build and push
+      #   uses: docker/build-push-action@v2
+      #   with:
+      #     context: .
+      #     push: true
+      #     tags: my-app:${{ github.sha }}
 
       - name: Deploy to AWS ECS
         uses: aws-actions/amazon-ecs-deploy-task-definition@v1
