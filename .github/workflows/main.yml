@@ -40,13 +40,13 @@ jobs:
       #     push: true
       #     tags: my-app:${{ github.sha }}
 
-      - name: Deploy to AWS ECS
-        uses: aws-actions/amazon-ecs-deploy-task-definition@v1
-        with:
-          task-definition: my-task-def.json
-          service: my-service
-          cluster: my-cluster
-          wait-for-service-stability: true
+      # - name: Deploy to AWS ECS
+      #   uses: aws-actions/amazon-ecs-deploy-task-definition@v1
+      #   with:
+      #     task-definition: my-task-def.json
+      #     service: my-service
+      #     cluster: my-cluster
+      #     wait-for-service-stability: true
 
       - name: Log in to Azure
         uses: azure/login@v1
