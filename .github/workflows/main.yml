@@ -38,7 +38,7 @@ jobs:
         with:
           context: .
           push: true
-          tags: docker push cd721/node_dictionary_app
+          tags: docker push ${{ secrets.DOCKERHUB_USERNAME }} /node_dictionary_app:latest
 
       # - name: Deploy to AWS ECS
       #   uses: aws-actions/amazon-ecs-deploy-task-definition@v1
