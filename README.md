@@ -1,4 +1,4 @@
-How to Containerize the Python Application. 
+# How to Containerize the Python Application
 1. Make sure Docker Desktop is opened 
 2. In your terminal, run ```docker build -t my-app .```
 3. Then run ```docker run -p 5000:5000 my-app```
@@ -8,7 +8,7 @@ Troubleshooting/Notes:
 - Make sure you have python downloaded to run this 
 - When pushing to GitHub, ensure that ```.env``` is present in the .gitignore file
 
-Developer Instructions
+# Developer Instructions
 
 Follow the below steps to develop the application on your local machine. The steps below that you have Python 3.12 and VSCode installed.
 
