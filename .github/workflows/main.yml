@@ -1,24 +1,126 @@
+# To build this pipline, we referenced: https://dev.to/honeybadger/build-a-cicd-pipeline-for-flask-apps-using-github-actions-4nb4
+# and https://docs.github.com/en/actions/use-cases-and-examples/deploying/deploying-to-amazon-elastic-container-service
 name: CI/CD
 
-# Controls when the workflow will run
 on:
-  # Activates the workflow; then there is a push to the main or master branch
   push:
-    branches: [main, master]
+    branches: [main, master] # This pipeline runs when there is a push to the main or master branch
 
-  # allows you to manually execute this pipeline from the Actions tab.
-  workflow_dispatch:
-
-# A workflow run consists of one or more jobs that can be executed either sequentially or concurrently.
+  
+  workflow_dispatch: # This pipeline can be invoked manually from the Actions tab on GitHub
+env:
+  API_KEY: ${{ secrets.API_KEY }}
+  AWS_REGION: us-east-2               # set this to your preferred AWS region, e.g. us-west-1
+  ECR_REPOSITORY: dictionary_apps/flask_dictionary_app           # set this to your Amazon ECR repository name
+  ECS_SERVICE: flask_dictionary_service                  # set this to your Amazon ECS service name
+  ECS_CLUSTER: dictionary_apps                 # set this to your Amazon ECS cluster name
+  ECS_TASK_DEFINITION: ./task-definition.json # set this to the path to your Amazon ECS task definition
+                                               # file, e.g. .aws/task-definition.json
+  CONTAINER_NAME: hello_flask           # set this to the name of the container in the
+                                               # containerDefinitions section of your task definition
+# This workflow has two jobs: build and deploy
 jobs:
-  # This workflow contains a single job called "build"
   build:
-    # The type of runner that the job will run on
     runs-on: ubuntu-latest
 
     #
     steps:
-      - uses: actions/checkout@v2  
-      - uses: actions/setup-python@v2  
-      - run: pip install -r requirements.txt  # install requirements to enable GitHub run tests
-      - run:  python -m pytest
+      - uses: actions/checkout@v2 # Check out the code repo
+      - uses: actions/setup-python@v2 
+      - run: pip install -r requirements.txt  # Install necessary packages
+      - run:  python -m pytest # Run the tests
+
+      - name: Log in to Docker Hub # Login to docker
+        uses: docker/login-action@v2
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }} 
+          password: ${{ secrets.DOCKERHUB_TOKEN }} 
+
+  deploy:
+    name: Deploy
+    runs-on: ubuntu-latest
+    environment: production
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        
+      - name: Build and push
+        uses: docker/build-push-action@v2
+        with:
+          context: .
+          push: true
+          tags: ${{ secrets.DOCKERHUB_USERNAME }}/hello_flask:latest
+
+
+      
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@0e613a0980cbf65ed5b322eb7a1e075d28913a83
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Login to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@62f4f872db3836360b72999f4b87f1ff13310f3a
+
+      - name: Build, tag, and push image to Amazon ECR
+        id: build-image
+        env:
+          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+          IMAGE_TAG: ${{ github.sha }}
+        run: |
+          # Build a docker container and
+          # push it to ECR so that it can
+          # be deployed to ECS.
+          docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG .
+          docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
+          echo "image=$ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG" >> $GITHUB_OUTPUT
+
+      - name: Fill in the new image ID in the Amazon ECS task definition
+        id: task-def
+        uses: aws-actions/amazon-ecs-render-task-definition@c804dfbdd57f713b6c079302a4c01db7017a36fc
+        with:
+          task-definition: ${{ env.ECS_TASK_DEFINITION }}
+          container-name: ${{ env.CONTAINER_NAME }}
+          image: ${{ steps.build-image.outputs.image }}
+
+      - name: Deploy Amazon ECS task definition
+        uses: aws-actions/amazon-ecs-deploy-task-definition@df9643053eda01f169e64a0e60233aacca83799a
+        with:
+          task-definition: ${{ steps.task-def.outputs.task-definition }}
+          service: ${{ env.ECS_SERVICE }}
+          cluster: ${{ env.ECS_CLUSTER }}
+          wait-for-service-stability: true
+
+
+      # - name: Deploy to AWS ECS
+      #   uses: aws-actions/amazon-ecs-deploy-task-definition@v1
+      #   with:
+      #     task-definition: my-task-def.json
+      #     service: my-service
+      #     cluster: my-cluster
+      #     wait-for-service-stability: true
+
+      # - name: Log in to Azure
+      #   uses: azure/login@v1
+      #   with:
+      #       creds: ${{ secrets.AZURE_CREDENTIALS }}
+
+      # - name: Push Docker image to Azure Container Registry
+      #   run: |
+      #       az acr login --name <YOUR_ACR_NAME>
+      #       docker tag my-app:${{ github.sha }} <YOUR_ACR_NAME>.azurecr.io/my-app:${{ github.sha }}
+      #       docker push <YOUR_ACR_NAME>.azurecr.io/my-app:${{ github.sha }}
+
+      # - name: Deploy to Azure Container Instances
+      #   run: |
+      #       az container create --resource-group <RESOURCE_GROUP> \
+      #       --name my-container \
+      #       --image <YOUR_ACR_NAME>.azurecr.io/my-app:${{ github.sha }} \
+      #       --cpu 1 --memory 1 \
+      #       --registry-login-server 
+      #       <YOUR_ACR_NAME>.azurecr.io \
+      #       --registry-username ${{ secrets.AZURE_USERNAME }} \
+      #       --registry-password ${{ secrets.AZURE_PASSWORD }}
